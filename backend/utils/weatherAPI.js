@@ -145,7 +145,9 @@ export const getCurrentWeather = async (lat, lon) => {
 };
 
 /**
- * Get 5-day forecast by coordinates
+ * Get 5-day forecast by coordinates (3-hour intervals)
+ * Note: Free plan supports 3-hour forecast for 5 days
+ * Daily/hourly forecasts require paid subscription
  */
 export const getForecast = async (lat, lon) => {
   if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY === 'your_openweather_api_key') {
@@ -154,6 +156,7 @@ export const getForecast = async (lat, lon) => {
 
   try {
     // Construct URL using URLSearchParams for proper encoding
+    // Free plan: /forecast returns 3-hour intervals for 5 days
     const params = new URLSearchParams({
       lat: lat.toString(),
       lon: lon.toString(),
@@ -166,25 +169,27 @@ export const getForecast = async (lat, lon) => {
     
     const response = await axios.get(url);
     
-    // Group forecasts by date
+    // Group forecasts by date (free plan provides 3-hour intervals)
     const forecasts = {};
-    response.data.list.forEach(item => {
-      const date = new Date(item.dt * 1000).toDateString();
-      if (!forecasts[date]) {
-        forecasts[date] = [];
-      }
-      forecasts[date].push({
-        time: new Date(item.dt * 1000),
-        temperature: item.main.temp,
-        feelsLike: item.main.feels_like,
-        description: item.weather[0].description,
-        icon: item.weather[0].icon,
-        humidity: item.main.humidity,
-        windSpeed: item.wind.speed
+    if (response.data && response.data.list) {
+      response.data.list.forEach(item => {
+        const date = new Date(item.dt * 1000).toDateString();
+        if (!forecasts[date]) {
+          forecasts[date] = [];
+        }
+        forecasts[date].push({
+          time: new Date(item.dt * 1000),
+          temperature: item.main.temp,
+          feelsLike: item.main.feels_like,
+          description: item.weather[0].description,
+          icon: item.weather[0].icon,
+          humidity: item.main.humidity,
+          windSpeed: item.wind.speed
+        });
       });
-    });
+    }
 
-    // Get daily summaries (next 5 days)
+    // Get daily summaries (next 5 days) from 3-hour intervals
     const dailyForecasts = Object.keys(forecasts)
       .slice(0, 5)
       .map(date => {
@@ -198,7 +203,7 @@ export const getForecast = async (lat, lon) => {
           icon: dayForecasts[0].icon,
           humidity: Math.round(dayForecasts.reduce((sum, f) => sum + f.humidity, 0) / dayForecasts.length),
           windSpeed: dayForecasts.reduce((sum, f) => sum + f.windSpeed, 0) / dayForecasts.length,
-          hourly: dayForecasts
+          intervals: dayForecasts // 3-hour intervals (free plan)
         };
       });
 
@@ -211,12 +216,17 @@ export const getForecast = async (lat, lon) => {
     // Handle 401 Unauthorized specifically
     if (error.response?.status === 401) {
       const apiKeyPreview = OPENWEATHER_API_KEY ? `${OPENWEATHER_API_KEY.substring(0, 4)}...${OPENWEATHER_API_KEY.substring(OPENWEATHER_API_KEY.length - 4)}` : 'not set';
-      throw new Error(`Invalid OpenWeatherMap API key (${apiKeyPreview}). Please verify your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized`);
+      throw new Error(`Invalid OpenWeatherMap API key (${apiKeyPreview}). Please verify your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized. Note: Free plan may require API key activation time (up to 2 hours).`);
     }
     
     // Handle 429 Too Many Requests
     if (error.response?.status === 429) {
-      throw new Error('OpenWeatherMap API rate limit exceeded. Please try again later.');
+      throw new Error('OpenWeatherMap API rate limit exceeded (free plan: 60 calls/minute). Please try again later.');
+    }
+    
+    // Handle 403 Forbidden (subscription plan limitation)
+    if (error.response?.status === 403) {
+      throw new Error('Forecast API not available on your subscription plan. Free plan supports 3-hour forecast for 5 days via /forecast endpoint.');
     }
     
     throw new Error(`Failed to fetch forecast: ${error.response?.data?.message || error.message}`);

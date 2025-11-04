@@ -27,7 +27,15 @@ router.post('/current', async (req, res) => {
     }
 
     const weather = await getCurrentWeather(coordinates.latitude, coordinates.longitude);
-    const forecast = await getForecast(coordinates.latitude, coordinates.longitude);
+    
+    // Try to get forecast, but don't fail if it's unavailable (free plan limitations)
+    let forecast = null;
+    try {
+      forecast = await getForecast(coordinates.latitude, coordinates.longitude);
+    } catch (forecastError) {
+      console.warn('Forecast unavailable (may be free plan limitation):', forecastError.message);
+      // Continue without forecast - current weather is still available
+    }
 
     res.json({
       location: locationInfo.formatted || location,
