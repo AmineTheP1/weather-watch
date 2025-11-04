@@ -30,14 +30,22 @@ const ForecastDisplay = ({ forecast }) => {
               </div>
               
               <div className="forecast-details">
-                <div className="forecast-detail">
-                  <span className="detail-label">Humidity</span>
-                  <span className="detail-value">{day.humidity}%</span>
-                </div>
+                {day.humidity !== null && (
+                  <div className="forecast-detail">
+                    <span className="detail-label">Humidity</span>
+                    <span className="detail-value">{day.humidity}%</span>
+                  </div>
+                )}
                 <div className="forecast-detail">
                   <span className="detail-label">Wind</span>
-                  <span className="detail-value">{day.windSpeed.toFixed(1)} m/s</span>
+                  <span className="detail-value">{day.windSpeed ? day.windSpeed.toFixed(1) : 'N/A'} m/s</span>
                 </div>
+                {day.precipitation !== undefined && (
+                  <div className="forecast-detail">
+                    <span className="detail-label">Precipitation</span>
+                    <span className="detail-value">{day.precipitation.toFixed(1)} mm</span>
+                  </div>
+                )}
               </div>
             </div>
           );

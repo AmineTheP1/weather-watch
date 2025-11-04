@@ -12,17 +12,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Validate required environment variables
-if (!process.env.OPENWEATHER_API_KEY || process.env.OPENWEATHER_API_KEY === 'your_openweather_api_key') {
-  console.warn('⚠️  WARNING: OPENWEATHER_API_KEY is not properly configured.');
-  console.warn('   Weather API features will not work without a valid API key.');
-  console.warn('   Get your API key from: https://openweathermap.org/api');
-} else {
-  const apiKey = process.env.OPENWEATHER_API_KEY.trim();
-  const preview = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
-  console.log(`✓ OpenWeatherMap API key loaded: ${preview}`);
-  console.log(`  API key length: ${apiKey.length} characters`);
-}
+// Using Open-Meteo API (no API key required)
+console.log('✓ Using Open-Meteo Weather API (free, no API key required)');
 
 // Middleware
 app.use(cors({

@@ -1,244 +1,190 @@
 import axios from 'axios';
 
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
-const BASE_URL = 'https://api.openweathermap.org/data/2.5';
-
-// Validate API key on module load
-if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY === 'your_openweather_api_key') {
-  console.warn('⚠️  WARNING: OPENWEATHER_API_KEY is not set or is using placeholder value.');
-  console.warn('   Please set a valid API key in your .env file.');
-  console.warn('   Get your API key from: https://openweathermap.org/api');
-}
+const OPEN_METEO_BASE_URL = 'https://api.open-meteo.com/v1';
+const GEOCODING_BASE_URL = 'https://geocoding-api.open-meteo.com/v1';
 
 /**
- * Geocode location to coordinates
+ * Geocode location to coordinates using Open-Meteo Geocoding API
  */
 export const geocodeLocation = async (location) => {
-  if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY === 'your_openweather_api_key') {
-    throw new Error('OpenWeatherMap API key is not configured. Please set OPENWEATHER_API_KEY in your .env file.');
-  }
-
   try {
-    // Try direct geocoding API using URLSearchParams
-    const geocodeParams = new URLSearchParams({
-      q: location,
-      limit: '1',
-      appid: OPENWEATHER_API_KEY.trim()
+    const params = new URLSearchParams({
+      name: location,
+      count: '1',
+      language: 'en',
+      format: 'json'
     });
-    const geocodeUrl = `https://api.openweathermap.org/geo/1.0/direct?${geocodeParams.toString()}`;
+    const geocodeUrl = `${GEOCODING_BASE_URL}/search?${params.toString()}`;
     
     console.log(`[Weather API] Geocoding location: ${location}`);
     
     const geocodeResponse = await axios.get(geocodeUrl);
 
-    if (geocodeResponse.data && geocodeResponse.data.length > 0) {
-      const { lat, lon, name, country, state } = geocodeResponse.data[0];
+    if (geocodeResponse.data && geocodeResponse.data.results && geocodeResponse.data.results.length > 0) {
+      const result = geocodeResponse.data.results[0];
       return {
-        latitude: lat,
-        longitude: lon,
-        name: name,
-        country: country,
-        state: state,
-        formatted: `${name}${state ? ', ' + state : ''}, ${country}`
+        latitude: result.latitude,
+        longitude: result.longitude,
+        name: result.name,
+        country: result.country,
+        admin1: result.admin1,
+        formatted: `${result.name}${result.admin1 ? ', ' + result.admin1 : ''}, ${result.country}`
       };
-    }
-
-    // Try zip code API if first attempt fails
-    if (/^\d{5}(-\d{4})?$/.test(location) || /^[A-Z]\d[A-Z]\s?\d[A-Z]\d$/.test(location.toUpperCase())) {
-      const zipParams = new URLSearchParams({
-        zip: location,
-        appid: OPENWEATHER_API_KEY.trim()
-      });
-      const zipUrl = `https://api.openweathermap.org/geo/1.0/zip?${zipParams.toString()}`;
-      
-      console.log(`[Weather API] Trying zip code geocoding: ${location}`);
-      
-      const zipResponse = await axios.get(zipUrl);
-      
-      if (zipResponse.data && zipResponse.data.lat) {
-        return {
-          latitude: zipResponse.data.lat,
-          longitude: zipResponse.data.lon,
-          name: zipResponse.data.name,
-          country: zipResponse.data.country,
-          formatted: `${zipResponse.data.name}, ${zipResponse.data.country}`
-        };
-      }
     }
 
     throw new Error('Location not found');
   } catch (error) {
     console.error('Geocoding error:', error.message);
-    console.error('Response status:', error.response?.status);
-    console.error('Response data:', error.response?.data);
-    
-    // Handle 401 Unauthorized specifically
-    if (error.response?.status === 401) {
-      const apiKeyPreview = OPENWEATHER_API_KEY ? `${OPENWEATHER_API_KEY.substring(0, 4)}...${OPENWEATHER_API_KEY.substring(OPENWEATHER_API_KEY.length - 4)}` : 'not set';
-      throw new Error(`Invalid OpenWeatherMap API key (${apiKeyPreview}). Please verify your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized`);
-    }
-    
-    // Handle 429 Too Many Requests
-    if (error.response?.status === 429) {
-      throw new Error('OpenWeatherMap API rate limit exceeded. Please try again later.');
-    }
-    
     throw new Error(`Failed to geocode location: ${error.response?.data?.message || error.message}`);
   }
 };
 
 /**
- * Get current weather by coordinates
+ * Get current weather by coordinates using Open-Meteo API
  */
 export const getCurrentWeather = async (lat, lon) => {
-  if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY === 'your_openweather_api_key') {
-    throw new Error('OpenWeatherMap API key is not configured. Please set OPENWEATHER_API_KEY in your .env file.');
-  }
-
   try {
-    // Construct URL using URLSearchParams for proper encoding
     const params = new URLSearchParams({
-      lat: lat.toString(),
-      lon: lon.toString(),
-      appid: OPENWEATHER_API_KEY.trim(),
-      units: 'metric'
+      latitude: lat.toString(),
+      longitude: lon.toString(),
+      current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m',
+      hourly: 'temperature_2m,relative_humidity_2m,weather_code',
+      timezone: 'auto'
     });
-    const url = `${BASE_URL}/weather?${params.toString()}`;
+    const url = `${OPEN_METEO_BASE_URL}/forecast?${params.toString()}`;
     
-    console.log(`[Weather API] Requesting: ${BASE_URL}/weather?lat=${lat}&lon=${lon}&appid=***&units=metric`);
+    console.log(`[Weather API] Requesting current weather for lat=${lat}, lon=${lon}`);
     
     const response = await axios.get(url);
+    const data = response.data;
+    const current = data.current;
+    
+    // Get weather description from weather code
+    const weatherCode = current.weather_code;
+    const weatherDescription = getWeatherDescription(weatherCode);
     
     return {
-      temperature: response.data.main.temp,
-      feelsLike: response.data.main.feels_like,
-      description: response.data.weather[0].description,
-      icon: response.data.weather[0].icon,
-      humidity: response.data.main.humidity,
-      windSpeed: response.data.wind.speed,
-      pressure: response.data.main.pressure,
-      visibility: response.data.visibility / 1000, // Convert to km
-      city: response.data.name,
-      country: response.data.sys.country,
-      sunrise: response.data.sys.sunrise,
-      sunset: response.data.sys.sunset,
-      timestamp: response.data.dt
+      temperature: current.temperature_2m,
+      feelsLike: current.apparent_temperature,
+      description: weatherDescription,
+      icon: getWeatherIcon(weatherCode),
+      humidity: current.relative_humidity_2m,
+      windSpeed: current.wind_speed_10m,
+      windDirection: current.wind_direction_10m,
+      windGusts: current.wind_gusts_10m,
+      pressure: current.pressure_msl,
+      cloudCover: current.cloud_cover,
+      timestamp: new Date(current.time).getTime() / 1000
     };
   } catch (error) {
     console.error('Weather API error:', error.message);
-    console.error('Response status:', error.response?.status);
-    console.error('Response data:', error.response?.data);
-    
-    // Handle 401 Unauthorized specifically
-    if (error.response?.status === 401) {
-      const apiKeyPreview = OPENWEATHER_API_KEY ? `${OPENWEATHER_API_KEY.substring(0, 4)}...${OPENWEATHER_API_KEY.substring(OPENWEATHER_API_KEY.length - 4)}` : 'not set';
-      throw new Error(`Invalid OpenWeatherMap API key (${apiKeyPreview}). Please verify your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized`);
-    }
-    
-    // Handle 429 Too Many Requests
-    if (error.response?.status === 429) {
-      throw new Error('OpenWeatherMap API rate limit exceeded. Please try again later.');
-    }
-    
     throw new Error(`Failed to fetch weather: ${error.response?.data?.message || error.message}`);
   }
 };
 
 /**
- * Get 5-day forecast by coordinates (3-hour intervals)
- * Note: Free plan supports 3-hour forecast for 5 days
- * Daily/hourly forecasts require paid subscription
+ * Get 5-day forecast by coordinates using Open-Meteo API
  */
 export const getForecast = async (lat, lon) => {
-  if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY === 'your_openweather_api_key') {
-    throw new Error('OpenWeatherMap API key is not configured. Please set OPENWEATHER_API_KEY in your .env file.');
-  }
-
   try {
-    // Construct URL using URLSearchParams for proper encoding
-    // Free plan: /forecast returns 3-hour intervals for 5 days
     const params = new URLSearchParams({
-      lat: lat.toString(),
-      lon: lon.toString(),
-      appid: OPENWEATHER_API_KEY.trim(),
-      units: 'metric'
+      latitude: lat.toString(),
+      longitude: lon.toString(),
+      daily: 'weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_sum,wind_speed_10m_max,wind_direction_10m_dominant',
+      hourly: 'temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m',
+      timezone: 'auto',
+      forecast_days: '5'
     });
-    const url = `${BASE_URL}/forecast?${params.toString()}`;
+    const url = `${OPEN_METEO_BASE_URL}/forecast?${params.toString()}`;
     
-    console.log(`[Weather API] Requesting forecast: ${BASE_URL}/forecast?lat=${lat}&lon=${lon}&appid=***&units=metric`);
+    console.log(`[Weather API] Requesting 5-day forecast for lat=${lat}, lon=${lon}`);
     
     const response = await axios.get(url);
+    const data = response.data;
     
-    // Group forecasts by date (free plan provides 3-hour intervals)
-    const forecasts = {};
-    if (response.data && response.data.list) {
-      response.data.list.forEach(item => {
-        const date = new Date(item.dt * 1000).toDateString();
-        if (!forecasts[date]) {
-          forecasts[date] = [];
-        }
-        forecasts[date].push({
-          time: new Date(item.dt * 1000),
-          temperature: item.main.temp,
-          feelsLike: item.main.feels_like,
-          description: item.weather[0].description,
-          icon: item.weather[0].icon,
-          humidity: item.main.humidity,
-          windSpeed: item.wind.speed
-        });
-      });
+    if (!data.daily || !data.daily.time) {
+      throw new Error('Invalid forecast data received');
     }
 
-    // Get daily summaries (next 5 days) from 3-hour intervals
-    const dailyForecasts = Object.keys(forecasts)
-      .slice(0, 5)
-      .map(date => {
-        const dayForecasts = forecasts[date];
-        const temps = dayForecasts.map(f => f.temperature);
-        return {
-          date: new Date(date),
-          minTemp: Math.min(...temps),
-          maxTemp: Math.max(...temps),
-          description: dayForecasts[0].description,
-          icon: dayForecasts[0].icon,
-          humidity: Math.round(dayForecasts.reduce((sum, f) => sum + f.humidity, 0) / dayForecasts.length),
-          windSpeed: dayForecasts.reduce((sum, f) => sum + f.windSpeed, 0) / dayForecasts.length,
-          intervals: dayForecasts // 3-hour intervals (free plan)
-        };
-      });
+    // Process daily forecasts
+    const dailyForecasts = data.daily.time.slice(0, 5).map((date, index) => {
+      const weatherCode = data.daily.weather_code[index];
+      return {
+        date: new Date(date),
+        minTemp: data.daily.temperature_2m_min[index],
+        maxTemp: data.daily.temperature_2m_max[index],
+        description: getWeatherDescription(weatherCode),
+        icon: getWeatherIcon(weatherCode),
+        humidity: null, // Daily humidity not directly available
+        windSpeed: data.daily.wind_speed_10m_max[index],
+        precipitation: data.daily.precipitation_sum[index]
+      };
+    });
 
     return dailyForecasts;
   } catch (error) {
     console.error('Forecast API error:', error.message);
-    console.error('Response status:', error.response?.status);
-    console.error('Response data:', error.response?.data);
-    
-    // Handle 401 Unauthorized specifically
-    if (error.response?.status === 401) {
-      const apiKeyPreview = OPENWEATHER_API_KEY ? `${OPENWEATHER_API_KEY.substring(0, 4)}...${OPENWEATHER_API_KEY.substring(OPENWEATHER_API_KEY.length - 4)}` : 'not set';
-      throw new Error(`Invalid OpenWeatherMap API key (${apiKeyPreview}). Please verify your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized. Note: Free plan may require API key activation time (up to 2 hours).`);
-    }
-    
-    // Handle 429 Too Many Requests
-    if (error.response?.status === 429) {
-      throw new Error('OpenWeatherMap API rate limit exceeded (free plan: 60 calls/minute). Please try again later.');
-    }
-    
-    // Handle 403 Forbidden (subscription plan limitation)
-    if (error.response?.status === 403) {
-      throw new Error('Forecast API not available on your subscription plan. Free plan supports 3-hour forecast for 5 days via /forecast endpoint.');
-    }
-    
     throw new Error(`Failed to fetch forecast: ${error.response?.data?.message || error.message}`);
   }
 };
 
 /**
  * Get historical weather (using current weather as approximation for demo)
- * Note: OpenWeatherMap historical data requires paid plan
  */
 export const getHistoricalWeather = async (lat, lon, date) => {
   // For demo purposes, we'll use current weather
-  // In production, you'd use a historical weather API
+  // Open-Meteo does support historical data but requires different endpoint
   return await getCurrentWeather(lat, lon);
+};
+
+/**
+ * Convert WMO weather code to description
+ */
+const getWeatherDescription = (code) => {
+  const codes = {
+    0: 'Clear sky',
+    1: 'Mainly clear',
+    2: 'Partly cloudy',
+    3: 'Overcast',
+    45: 'Fog',
+    48: 'Depositing rime fog',
+    51: 'Light drizzle',
+    53: 'Moderate drizzle',
+    55: 'Dense drizzle',
+    56: 'Light freezing drizzle',
+    57: 'Dense freezing drizzle',
+    61: 'Slight rain',
+    63: 'Moderate rain',
+    65: 'Heavy rain',
+    66: 'Light freezing rain',
+    67: 'Heavy freezing rain',
+    71: 'Slight snow fall',
+    73: 'Moderate snow fall',
+    75: 'Heavy snow fall',
+    77: 'Snow grains',
+    80: 'Slight rain showers',
+    81: 'Moderate rain showers',
+    82: 'Violent rain showers',
+    85: 'Slight snow showers',
+    86: 'Heavy snow showers',
+    95: 'Thunderstorm',
+    96: 'Thunderstorm with slight hail',
+    99: 'Thunderstorm with heavy hail'
+  };
+  return codes[code] || 'Unknown';
+};
+
+/**
+ * Convert WMO weather code to icon identifier
+ */
+const getWeatherIcon = (code) => {
+  if (code === 0) return '01d'; // Clear
+  if (code <= 3) return '02d'; // Partly cloudy
+  if (code === 45 || code === 48) return '50d'; // Fog
+  if (code >= 51 && code <= 67) return '09d'; // Rain
+  if (code >= 71 && code <= 77) return '13d'; // Snow
+  if (code >= 80 && code <= 82) return '10d'; // Rain showers
+  if (code >= 85 && code <= 86) return '13d'; // Snow showers
+  if (code >= 95 && code <= 99) return '11d'; // Thunderstorm
+  return '01d';
 };
