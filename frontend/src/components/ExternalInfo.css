@@ -43,6 +43,13 @@
   color: white;
 }
 
+.external-note {
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
 .youtube-videos {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));

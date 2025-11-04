@@ -47,7 +47,7 @@ export const getCurrentWeather = async (lat, lon) => {
     const params = new URLSearchParams({
       latitude: lat.toString(),
       longitude: lon.toString(),
-      current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m',
+      current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility',
       hourly: 'temperature_2m,relative_humidity_2m,weather_code',
       timezone: 'auto'
     });
@@ -74,6 +74,7 @@ export const getCurrentWeather = async (lat, lon) => {
       windGusts: current.wind_gusts_10m,
       pressure: current.pressure_msl,
       cloudCover: current.cloud_cover,
+      visibility: current.visibility ? (current.visibility / 1000).toFixed(1) : null, // Convert meters to km
       timestamp: new Date(current.time).getTime() / 1000
     };
   } catch (error) {

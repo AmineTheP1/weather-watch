@@ -24,8 +24,11 @@ router.post('/location-info', async (req, res) => {
       return res.status(400).json({ error: 'Location or coordinates required' });
     }
 
+    // Use the original location name for better YouTube search results
+    const locationName = location || locationInfo?.formatted || `${coordinates.lat}, ${coordinates.lon}`;
+    
     const externalInfo = await getLocationInfo(
-      locationInfo?.formatted || location,
+      locationName,
       coordinates.lat,
       coordinates.lon
     );

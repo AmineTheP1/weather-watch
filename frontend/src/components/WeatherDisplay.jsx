@@ -60,13 +60,15 @@ const WeatherDisplay = ({ data, location }) => {
           </div>
         </div>
 
-        <div className="detail-item">
-          <FaEye className="detail-icon" />
-          <div className="detail-content">
-            <span className="detail-label">Visibility</span>
-            <span className="detail-value">{data.visibility} km</span>
+        {data.visibility !== null && data.visibility !== undefined && (
+          <div className="detail-item">
+            <FaEye className="detail-icon" />
+            <div className="detail-content">
+              <span className="detail-label">Visibility</span>
+              <span className="detail-value">{data.visibility} km</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {data.sunrise && (
           <div className="detail-item">

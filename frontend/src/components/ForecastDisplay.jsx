@@ -59,10 +59,10 @@ const ForecastDisplay = ({ forecast }) => {
                   <span className="detail-label">Wind</span>
                   <span className="detail-value">{day.windSpeed ? day.windSpeed.toFixed(1) : 'N/A'} m/s</span>
                 </div>
-                {day.precipitation !== undefined && (
+                {day.precipitation !== undefined && day.precipitation !== null && (
                   <div className="forecast-detail">
                     <span className="detail-label">Precipitation</span>
-                    <span className="detail-value">{day.precipitation.toFixed(1)} mm</span>
+                    <span className="detail-value">{day.precipitation > 0 ? day.precipitation.toFixed(1) : '0.0'} mm</span>
                   </div>
                 )}
               </div>

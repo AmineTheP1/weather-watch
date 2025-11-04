@@ -56,29 +56,31 @@ const ExternalInfo = ({ location, coordinates }) => {
     <div className="external-info">
       <h3>Location Information</h3>
       
-      {externalData.mapsUrl && (
+      {externalData.mapsEmbed && (
         <div className="external-section">
           <h4>
             <FaMapMarkerAlt /> Google Maps
           </h4>
-          <a 
-            href={externalData.mapsUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="external-link"
-          >
-            View on Google Maps
-          </a>
-          {externalData.mapsEmbed && (
-            <iframe
-              width="100%"
-              height="300"
-              style={{ border: 0, borderRadius: '8px', marginTop: '1rem' }}
-              loading="lazy"
-              allowFullScreen
-              src={externalData.mapsEmbed}
-              title="Location Map"
-            />
+          <iframe
+            width="100%"
+            height="300"
+            style={{ border: 0, borderRadius: '8px', marginTop: '1rem' }}
+            loading="lazy"
+            allowFullScreen
+            referrerPolicy="no-referrer-when-downgrade"
+            src={externalData.mapsEmbed}
+            title="Location Map"
+          />
+          {externalData.mapsUrl && (
+            <a 
+              href={externalData.mapsUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="external-link"
+              style={{ marginTop: '1rem', display: 'inline-block' }}
+            >
+              Open in Google Maps
+            </a>
           )}
         </div>
       )}
