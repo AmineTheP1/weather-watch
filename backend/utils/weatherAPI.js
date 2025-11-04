@@ -3,10 +3,21 @@ import axios from 'axios';
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
 const BASE_URL = 'https://api.openweathermap.org/data/2.5';
 
+// Validate API key on module load
+if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY === 'your_openweather_api_key') {
+  console.warn('⚠️  WARNING: OPENWEATHER_API_KEY is not set or is using placeholder value.');
+  console.warn('   Please set a valid API key in your .env file.');
+  console.warn('   Get your API key from: https://openweathermap.org/api');
+}
+
 /**
  * Geocode location to coordinates
  */
 export const geocodeLocation = async (location) => {
+  if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY === 'your_openweather_api_key') {
+    throw new Error('OpenWeatherMap API key is not configured. Please set OPENWEATHER_API_KEY in your .env file.');
+  }
+
   try {
     // Try direct geocoding API
     const geocodeUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${OPENWEATHER_API_KEY}`;
@@ -43,7 +54,18 @@ export const geocodeLocation = async (location) => {
     throw new Error('Location not found');
   } catch (error) {
     console.error('Geocoding error:', error.message);
-    throw new Error(`Failed to geocode location: ${error.message}`);
+    
+    // Handle 401 Unauthorized specifically
+    if (error.response?.status === 401) {
+      throw new Error('Invalid OpenWeatherMap API key. Please check your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized');
+    }
+    
+    // Handle 429 Too Many Requests
+    if (error.response?.status === 429) {
+      throw new Error('OpenWeatherMap API rate limit exceeded. Please try again later.');
+    }
+    
+    throw new Error(`Failed to geocode location: ${error.response?.data?.message || error.message}`);
   }
 };
 
@@ -51,6 +73,10 @@ export const geocodeLocation = async (location) => {
  * Get current weather by coordinates
  */
 export const getCurrentWeather = async (lat, lon) => {
+  if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY === 'your_openweather_api_key') {
+    throw new Error('OpenWeatherMap API key is not configured. Please set OPENWEATHER_API_KEY in your .env file.');
+  }
+
   try {
     const url = `${BASE_URL}/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
     const response = await axios.get(url);
@@ -72,7 +98,18 @@ export const getCurrentWeather = async (lat, lon) => {
     };
   } catch (error) {
     console.error('Weather API error:', error.message);
-    throw new Error(`Failed to fetch weather: ${error.message}`);
+    
+    // Handle 401 Unauthorized specifically
+    if (error.response?.status === 401) {
+      throw new Error('Invalid OpenWeatherMap API key. Please check your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized');
+    }
+    
+    // Handle 429 Too Many Requests
+    if (error.response?.status === 429) {
+      throw new Error('OpenWeatherMap API rate limit exceeded. Please try again later.');
+    }
+    
+    throw new Error(`Failed to fetch weather: ${error.response?.data?.message || error.message}`);
   }
 };
 
@@ -80,6 +117,10 @@ export const getCurrentWeather = async (lat, lon) => {
  * Get 5-day forecast by coordinates
  */
 export const getForecast = async (lat, lon) => {
+  if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY === 'your_openweather_api_key') {
+    throw new Error('OpenWeatherMap API key is not configured. Please set OPENWEATHER_API_KEY in your .env file.');
+  }
+
   try {
     const url = `${BASE_URL}/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
     const response = await axios.get(url);
@@ -123,7 +164,18 @@ export const getForecast = async (lat, lon) => {
     return dailyForecasts;
   } catch (error) {
     console.error('Forecast API error:', error.message);
-    throw new Error(`Failed to fetch forecast: ${error.message}`);
+    
+    // Handle 401 Unauthorized specifically
+    if (error.response?.status === 401) {
+      throw new Error('Invalid OpenWeatherMap API key. Please check your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized');
+    }
+    
+    // Handle 429 Too Many Requests
+    if (error.response?.status === 429) {
+      throw new Error('OpenWeatherMap API rate limit exceeded. Please try again later.');
+    }
+    
+    throw new Error(`Failed to fetch forecast: ${error.response?.data?.message || error.message}`);
   }
 };
 
