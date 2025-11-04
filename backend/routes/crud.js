@@ -2,14 +2,32 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import { query } from '../db/init.js';
 import { geocodeLocation, getHistoricalWeather } from '../utils/weatherAPI.js';
-import { isWithinInterval, parseISO, isValid } from 'date-fns';
+import { isWithinInterval } from 'date-fns';
 
 const router = express.Router();
 
 // Validation middleware
 const validateDateRange = [
-  body('start_date').isISO8601().toDate().withMessage('Valid start date required'),
-  body('end_date').isISO8601().toDate().withMessage('Valid end date required'),
+  body('start_date').custom((value) => {
+    if (!value) {
+      throw new Error('Start date is required');
+    }
+    const date = new Date(value);
+    if (isNaN(date.getTime())) {
+      throw new Error('Invalid start date format');
+    }
+    return true;
+  }),
+  body('end_date').custom((value) => {
+    if (!value) {
+      throw new Error('End date is required');
+    }
+    const date = new Date(value);
+    if (isNaN(date.getTime())) {
+      throw new Error('Invalid end date format');
+    }
+    return true;
+  }),
   body('location').notEmpty().withMessage('Location is required'),
 ];
 
@@ -22,12 +40,14 @@ router.post('/create', validateDateRange, async (req, res) => {
     }
 
     const { location, start_date, end_date } = req.body;
-    const startDate = parseISO(start_date);
-    const endDate = parseISO(end_date);
+    
+    // Parse dates - handle both ISO strings and YYYY-MM-DD format
+    const startDate = new Date(start_date);
+    const endDate = new Date(end_date);
 
     // Validate date range
-    if (!isValid(startDate) || !isValid(endDate)) {
-      return res.status(400).json({ error: 'Invalid date format' });
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return res.status(400).json({ error: 'Invalid date format. Please use YYYY-MM-DD format.' });
     }
 
     if (startDate > endDate) {
@@ -187,11 +207,11 @@ router.put('/update/:id', [
 
     // Validate and update date range if provided
     if (start_date || end_date) {
-      const startDate = start_date ? parseISO(start_date) : parseISO(existing.rows[0].start_date);
-      const endDate = end_date ? parseISO(end_date) : parseISO(existing.rows[0].end_date);
+      const startDate = start_date ? new Date(start_date) : new Date(existing.rows[0].start_date);
+      const endDate = end_date ? new Date(end_date) : new Date(existing.rows[0].end_date);
 
-      if (!isValid(startDate) || !isValid(endDate)) {
-        return res.status(400).json({ error: 'Invalid date format' });
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ error: 'Invalid date format. Please use YYYY-MM-DD format.' });
       }
 
       if (startDate > endDate) {
