@@ -211,11 +211,11 @@ weather-watch/
 
 ## Demo Video
 
-[Include link to your demo video here]
+[Include link to demo video here]
 
 ## Developer Information
 
-- **Name**: [Your Name]
+- **Name**: Amine Aichane
 - **Project**: Weather Watch - Tech Assessment
 - **Company**: PM Accelerator (Product Manager Accelerator)
 
