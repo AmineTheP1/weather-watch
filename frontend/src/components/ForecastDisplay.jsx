@@ -8,15 +8,34 @@ const ForecastDisplay = ({ forecast }) => {
     <div className="forecast-display">
       <h2>5-Day Forecast</h2>
       <div className="forecast-grid">
-        {forecast.map((day, index) => {
-          const iconUrl = `https://openweathermap.org/img/wn/${day.icon}@2x.png`;
-          
-          return (
+        {forecast
+          .filter((day) => day && day.date) // Filter out invalid entries
+          .map((day, index) => {
+            const iconUrl = `https://openweathermap.org/img/wn/${day.icon}@2x.png`;
+            
+            // Ensure date is a Date object
+            let dateObj;
+            if (day.date instanceof Date) {
+              dateObj = day.date;
+            } else if (typeof day.date === 'string') {
+              dateObj = new Date(day.date);
+            } else {
+              console.error('Invalid date format:', day.date);
+              return null;
+            }
+            
+            // Validate date
+            if (isNaN(dateObj.getTime())) {
+              console.error('Invalid date value:', day.date);
+              return null;
+            }
+            
+            return (
             <div key={index} className="forecast-card">
               <div className="forecast-date">
-                {index === 0 ? 'Today' : format(day.date, 'EEEE')}
+                {index === 0 ? 'Today' : format(dateObj, 'EEEE')}
                 <span className="forecast-date-full">
-                  {format(day.date, 'MMM d')}
+                  {format(dateObj, 'MMM d')}
                 </span>
               </div>
               

@@ -107,10 +107,16 @@ export const getForecast = async (lat, lon) => {
     }
 
     // Process daily forecasts
-    const dailyForecasts = data.daily.time.slice(0, 5).map((date, index) => {
+    const dailyForecasts = data.daily.time.slice(0, 5).map((dateString, index) => {
       const weatherCode = data.daily.weather_code[index];
+      // Create date object and ensure it's valid
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        throw new Error(`Invalid date string: ${dateString}`);
+      }
+      
       return {
-        date: new Date(date),
+        date: date.toISOString(), // Send as ISO string for JSON serialization
         minTemp: data.daily.temperature_2m_min[index],
         maxTemp: data.daily.temperature_2m_max[index],
         description: getWeatherDescription(weatherCode),
