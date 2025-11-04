@@ -19,8 +19,16 @@ export const geocodeLocation = async (location) => {
   }
 
   try {
-    // Try direct geocoding API
-    const geocodeUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${OPENWEATHER_API_KEY}`;
+    // Try direct geocoding API using URLSearchParams
+    const geocodeParams = new URLSearchParams({
+      q: location,
+      limit: '1',
+      appid: OPENWEATHER_API_KEY.trim()
+    });
+    const geocodeUrl = `https://api.openweathermap.org/geo/1.0/direct?${geocodeParams.toString()}`;
+    
+    console.log(`[Weather API] Geocoding location: ${location}`);
+    
     const geocodeResponse = await axios.get(geocodeUrl);
 
     if (geocodeResponse.data && geocodeResponse.data.length > 0) {
@@ -37,7 +45,14 @@ export const geocodeLocation = async (location) => {
 
     // Try zip code API if first attempt fails
     if (/^\d{5}(-\d{4})?$/.test(location) || /^[A-Z]\d[A-Z]\s?\d[A-Z]\d$/.test(location.toUpperCase())) {
-      const zipUrl = `https://api.openweathermap.org/geo/1.0/zip?zip=${encodeURIComponent(location)}&appid=${OPENWEATHER_API_KEY}`;
+      const zipParams = new URLSearchParams({
+        zip: location,
+        appid: OPENWEATHER_API_KEY.trim()
+      });
+      const zipUrl = `https://api.openweathermap.org/geo/1.0/zip?${zipParams.toString()}`;
+      
+      console.log(`[Weather API] Trying zip code geocoding: ${location}`);
+      
       const zipResponse = await axios.get(zipUrl);
       
       if (zipResponse.data && zipResponse.data.lat) {
@@ -54,10 +69,13 @@ export const geocodeLocation = async (location) => {
     throw new Error('Location not found');
   } catch (error) {
     console.error('Geocoding error:', error.message);
+    console.error('Response status:', error.response?.status);
+    console.error('Response data:', error.response?.data);
     
     // Handle 401 Unauthorized specifically
     if (error.response?.status === 401) {
-      throw new Error('Invalid OpenWeatherMap API key. Please check your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized');
+      const apiKeyPreview = OPENWEATHER_API_KEY ? `${OPENWEATHER_API_KEY.substring(0, 4)}...${OPENWEATHER_API_KEY.substring(OPENWEATHER_API_KEY.length - 4)}` : 'not set';
+      throw new Error(`Invalid OpenWeatherMap API key (${apiKeyPreview}). Please verify your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized`);
     }
     
     // Handle 429 Too Many Requests
@@ -78,8 +96,17 @@ export const getCurrentWeather = async (lat, lon) => {
   }
 
   try {
-    // Construct URL following OpenWeatherMap API format: /data/2.5/weather?lat={lat}&lon={lon}&appid={API key}
-    const url = `${BASE_URL}/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+    // Construct URL using URLSearchParams for proper encoding
+    const params = new URLSearchParams({
+      lat: lat.toString(),
+      lon: lon.toString(),
+      appid: OPENWEATHER_API_KEY.trim(),
+      units: 'metric'
+    });
+    const url = `${BASE_URL}/weather?${params.toString()}`;
+    
+    console.log(`[Weather API] Requesting: ${BASE_URL}/weather?lat=${lat}&lon=${lon}&appid=***&units=metric`);
+    
     const response = await axios.get(url);
     
     return {
@@ -99,10 +126,13 @@ export const getCurrentWeather = async (lat, lon) => {
     };
   } catch (error) {
     console.error('Weather API error:', error.message);
+    console.error('Response status:', error.response?.status);
+    console.error('Response data:', error.response?.data);
     
     // Handle 401 Unauthorized specifically
     if (error.response?.status === 401) {
-      throw new Error('Invalid OpenWeatherMap API key. Please check your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized');
+      const apiKeyPreview = OPENWEATHER_API_KEY ? `${OPENWEATHER_API_KEY.substring(0, 4)}...${OPENWEATHER_API_KEY.substring(OPENWEATHER_API_KEY.length - 4)}` : 'not set';
+      throw new Error(`Invalid OpenWeatherMap API key (${apiKeyPreview}). Please verify your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized`);
     }
     
     // Handle 429 Too Many Requests
@@ -123,8 +153,17 @@ export const getForecast = async (lat, lon) => {
   }
 
   try {
-    // Construct URL following OpenWeatherMap API format: /data/2.5/forecast?lat={lat}&lon={lon}&appid={API key}
-    const url = `${BASE_URL}/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+    // Construct URL using URLSearchParams for proper encoding
+    const params = new URLSearchParams({
+      lat: lat.toString(),
+      lon: lon.toString(),
+      appid: OPENWEATHER_API_KEY.trim(),
+      units: 'metric'
+    });
+    const url = `${BASE_URL}/forecast?${params.toString()}`;
+    
+    console.log(`[Weather API] Requesting forecast: ${BASE_URL}/forecast?lat=${lat}&lon=${lon}&appid=***&units=metric`);
+    
     const response = await axios.get(url);
     
     // Group forecasts by date
@@ -166,10 +205,13 @@ export const getForecast = async (lat, lon) => {
     return dailyForecasts;
   } catch (error) {
     console.error('Forecast API error:', error.message);
+    console.error('Response status:', error.response?.status);
+    console.error('Response data:', error.response?.data);
     
     // Handle 401 Unauthorized specifically
     if (error.response?.status === 401) {
-      throw new Error('Invalid OpenWeatherMap API key. Please check your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized');
+      const apiKeyPreview = OPENWEATHER_API_KEY ? `${OPENWEATHER_API_KEY.substring(0, 4)}...${OPENWEATHER_API_KEY.substring(OPENWEATHER_API_KEY.length - 4)}` : 'not set';
+      throw new Error(`Invalid OpenWeatherMap API key (${apiKeyPreview}). Please verify your OPENWEATHER_API_KEY in .env file. Status: 401 Unauthorized`);
     }
     
     // Handle 429 Too Many Requests

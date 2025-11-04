@@ -17,6 +17,11 @@ if (!process.env.OPENWEATHER_API_KEY || process.env.OPENWEATHER_API_KEY === 'you
   console.warn('⚠️  WARNING: OPENWEATHER_API_KEY is not properly configured.');
   console.warn('   Weather API features will not work without a valid API key.');
   console.warn('   Get your API key from: https://openweathermap.org/api');
+} else {
+  const apiKey = process.env.OPENWEATHER_API_KEY.trim();
+  const preview = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
+  console.log(`✓ OpenWeatherMap API key loaded: ${preview}`);
+  console.log(`  API key length: ${apiKey.length} characters`);
 }
 
 // Middleware
