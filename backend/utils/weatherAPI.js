@@ -78,6 +78,7 @@ export const getCurrentWeather = async (lat, lon) => {
   }
 
   try {
+    // Construct URL following OpenWeatherMap API format: /data/2.5/weather?lat={lat}&lon={lon}&appid={API key}
     const url = `${BASE_URL}/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
     const response = await axios.get(url);
     
@@ -122,6 +123,7 @@ export const getForecast = async (lat, lon) => {
   }
 
   try {
+    // Construct URL following OpenWeatherMap API format: /data/2.5/forecast?lat={lat}&lon={lon}&appid={API key}
     const url = `${BASE_URL}/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
     const response = await axios.get(url);
     
