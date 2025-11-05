@@ -39,9 +39,18 @@ initializeDatabase()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
   })
   .catch((error) => {
     console.error('Failed to initialize database:', error);
-    process.exit(1);
+    // Don't exit in production, allow server to start without database
+    if (process.env.NODE_ENV !== 'production') {
+      process.exit(1);
+    } else {
+      console.log('Starting server without database connection...');
+      app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT} (without database)`);
+      });
+    }
   });

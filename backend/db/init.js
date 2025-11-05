@@ -11,6 +11,10 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'weather_watch',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || '',
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 10
 });
 
 export const query = (text, params) => pool.query(text, params);
@@ -50,7 +54,12 @@ export const initializeDatabase = async () => {
     console.log('Database tables initialized');
   } catch (error) {
     console.error('Database initialization error:', error);
-    throw error;
+    // In production, log error but don't throw to allow server to start
+    if (process.env.NODE_ENV !== 'production') {
+      throw error;
+    } else {
+      console.log('Database not available, continuing without database features');
+    }
   }
 };
 
