@@ -26,13 +26,4 @@
     "NIXPACKS_PKGS": "nodejs-18_x",
     "NIXPACKS_CACHE_DIRS": "/app/frontend/node_modules,/app/backend/node_modules"
   }
-}10,
-    "numReplicas": 1
-  },
-  "environments": {
-    "production": {
-      "buildCommand": "npm ci && cd frontend && npm ci && npm run build && cd ../backend && npm ci",
-      "startCommand": "NODE_ENV=production node backend/server.js"
-    }
-  }
 }
