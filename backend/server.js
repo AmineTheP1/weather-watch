@@ -1,11 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import weatherRoutes from './routes/weather.js';
 import crudRoutes from './routes/crud.js';
 import exportRoutes from './routes/export.js';
 import externalRoutes from './routes/external.js';
 import { initializeDatabase } from './db/init.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -16,9 +21,35 @@ const PORT = process.env.PORT || 3001;
 console.log('✓ Using Open-Meteo Weather API (free, no API key required)');
 
 // Middleware
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://*.vercel.app',
+  'https://vercel.app',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is allowed
+    if (allowedOrigins.some(allowed => {
+      if (allowed.includes('*')) {
+        const pattern = allowed.replace('*', '.*');
+        return new RegExp(pattern).test(origin);
+      }
+      return allowed === origin;
+    })) {
+      callback(null, true);
+    } else {
+      console.log('Origin not allowed:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -32,6 +63,16 @@ app.use('/api/external', externalRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Weather Watch API is running' });
+});
+
+// Catch-all handler for React Router (must be after API routes)
+app.get('*', (req, res) => {
+  // Only serve index.html for non-API routes in production
+  if (process.env.NODE_ENV === 'production' && !req.path.startsWith('/api/')) {
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+  } else {
+    res.status(404).json({ error: 'Route not found' });
+  }
 });
 
 // Initialize database and start server
