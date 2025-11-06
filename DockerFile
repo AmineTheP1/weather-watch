@@ -1,0 +1,25 @@
+# Use official Node.js image
+FROM node:18
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files for frontend and backend
+COPY frontend/package*.json frontend/
+COPY backend/package*.json backend/
+
+# Install dependencies separately to leverage Docker cache
+RUN cd frontend && npm ci
+RUN cd backend && npm ci
+
+# Copy the rest of the files
+COPY . .
+
+# Build frontend
+RUN cd frontend && npm run build
+
+# Expose backend port
+EXPOSE 3000
+
+# Start backend server
+CMD ["node", "backend/server.js"]
