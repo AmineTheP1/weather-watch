@@ -1,7 +1,6 @@
 {
   "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "cd frontend && npm install && npm run build && cd ../backend && npm install"
+    "builder": "DOCKER"
   },
   "deploy": {
     "startCommand": "node backend/server.js",
