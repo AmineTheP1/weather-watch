@@ -1,7 +1,4 @@
 {
-  "build": {
-    "builder": "DOCKER"
-  },
   "deploy": {
     "startCommand": "node backend/server.js",
     "healthcheckPath": "/",
