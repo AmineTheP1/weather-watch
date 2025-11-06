@@ -2,6 +2,9 @@
 
 A full-stack weather application built with React (Vite), Express, and PostgreSQL that provides real-time weather information with CRUD functionality and optional API integrations.
 
+## Demo Video
+https://github.com/user-attachments/assets/6f5acd52-022b-4806-82e5-5edd323f901a
+
 ## Features
 
 ### Tech Assessment 1 ✅
@@ -209,11 +212,7 @@ weather-watch/
 - The database automatically validates dates and locations before storing
 - All user inputs are validated on both frontend and backend
 
-## Demo Video
 
-
-
-https://github.com/user-attachments/assets/6f5acd52-022b-4806-82e5-5edd323f901a
 
 
 
